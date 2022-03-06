@@ -1,0 +1,143 @@
+#
+# s3fs-fuse-awscred-lib ( s3fs-fuse credential I/F library for AWS )
+#
+#     Copyright 2022 Takeshi Nakatani <ggtakec@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+name: awscredlib CI
+
+on:
+  push:
+  pull_request:
+  #
+  # CRON event is fire on every sunday(UTC).
+  #
+  schedule:
+    - cron: '0 0 * * 0'
+
+#
+# Jobs
+#
+jobs:
+  Linux:
+    runs-on: ubuntu-latest
+
+    #
+    # build matrix for containers
+    #
+    strategy:
+      #
+      # do not stop jobs automatically if any of the jobs fail
+      #
+      fail-fast: false
+
+      #
+      # matrix for containers
+      #
+      matrix:
+        # [NOTE]
+        # The following OS is not built because the version of cmake is low:
+        #   ubuntu:18.04
+        #   debian:stretch
+        #   centos:centos7
+        #
+        container:
+          - ubuntu:21.10
+          - ubuntu:20.04
+          - debian:bullseye
+          - debian:buster
+          - rockylinux:8
+          - fedora:35
+          - opensuse/leap:15
+
+    container:
+      image: ${{ matrix.container }}
+
+    env:
+      # [NOTE]
+      # Installation special environment variables for debian and ubuntu.
+      #
+      DEBIAN_FRONTEND:  noninteractive
+
+    steps:
+      # [NOTE]
+      # On openSUSE, tar and gzip must be installed before action/checkout.
+      #
+      - name: Install packages before checkout
+        run: |
+          if [ "${{ matrix.container }}" = "opensuse/leap:15" ]; then zypper install -y tar gzip; fi
+
+      - name: Checkout source code
+        uses: actions/checkout@v2
+
+      - name: Install packages
+        run: |
+          .github/workflows/linux-ci-helper.sh ${{ matrix.container }}
+
+      - name: Build aws-sdk-cpp
+        run: |
+          mkdir -p /tmp/aws-sdk/sdk_build
+          cd /tmp/aws-sdk
+          git clone --recurse-submodules https://github.com/aws/aws-sdk-cpp
+          cd sdk_build
+          cmake ../aws-sdk-cpp -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/home/ggtakec/work/aws-sdk-cpp -DBUILD_ONLY="core;identity-management" -DAUTORUN_UNIT_TESTS=OFF 
+          make
+          make install
+
+      - name: Build
+        run: |
+          cmake -S . -B build
+          cmake --build build
+
+      - name: Test
+        run: |
+          mkdir "${HOME}"/.aws
+          echo "[default]" > "${HOME}"/.aws/config
+          printf "%s\n%s\n%s\n" "[default]" "aws_access_key_id = TESTAWSACCESSKEYID" "aws_secret_access_key = TESTSECRETAWSACCESSKEYID" > "${HOME}"/.aws/credentials
+          ./build/s3fsawscred_test | grep -v '[E|e]xpiration' | sed -e "s/Version .*$/Version/g" > /tmp/s3fsawscred_test.result
+          diff .github/workflows/s3fsawscred_test.result /tmp/s3fsawscred_test.result
+
+  macos11:
+    runs-on: macos-11
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
+
+      - name: Install packages
+        run: |
+          brew install aws-sdk-cpp
+
+      - name: Build
+        run: |
+          cmake -S . -B build
+          cmake --build build
+
+      - name: Test
+        run: |
+          mkdir "${HOME}"/.aws
+          echo "[default]" > "${HOME}"/.aws/config
+          printf "%s\n%s\n%s\n" "[default]" "aws_access_key_id = TESTAWSACCESSKEYID" "aws_secret_access_key = TESTSECRETAWSACCESSKEYID" > "${HOME}"/.aws/credentials
+          ./build/s3fsawscred_test | grep -v '[E|e]xpiration' | sed -e "s/Version .*$/Version/g" > /tmp/s3fsawscred_test.result
+          diff .github/workflows/s3fsawscred_test.result /tmp/s3fsawscred_test.result
+
+#
+# Local variables:
+# tab-width: 4
+# c-basic-offset: 4
+# End:
+# vim600: expandtab sw=4 ts=4 fdm=marker
+# vim<600: expandtab sw=4 ts=4
+#

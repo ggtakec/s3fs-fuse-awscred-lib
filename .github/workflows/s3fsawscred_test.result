@@ -1,0 +1,27 @@
+[awscred_test] Start test for s3fsawscred.so
+
+  [Function] InitS3fsCredential
+     [Succeed]
+
+  [Function] VersionS3fsCredential - short
+     [Succeed] s3fs-fuse-awscred-lib : Version
+
+  [Function] VersionS3fsCredential - detail
+     [Succeed] 
+s3fs-fuse-awscred-lib : Version
+s3fs-fuse credential I/F library for AWS
+Copyright 2022 Takeshi Nakatani <ggtakec@gmail.com>
+
+  [Function] UpdateS3fsCredential
+[s3fsawscred] : Access Key Id = TESTAWSACCESSKEYID
+[s3fsawscred] : Secret Key    = TESTSECRETAWSACCESSKEYID
+[s3fsawscred] : Session Token = 
+     [Succeed] Credential = {
+                 AWS Access Key Id    = TESTAWSACCESSKEYID
+                 AWS Secret Key       = TESTSECRETAWSACCESSKEYID
+                 AWS Session Token    = 
+               }
+
+  [Function] FreeS3fsCredential
+     [Succeed]
+
