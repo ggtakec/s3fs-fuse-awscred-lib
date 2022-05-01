@@ -98,7 +98,7 @@ elif [ "${CONTAINER_FULLNAME}" = "fedora:35" ]; then
 	PACKAGE_MANAGER_BIN="dnf"
 	PACKAGE_UPDATE_OPTIONS="update -y -qq"
 
-	INSTALL_PACKAGES="git gcc-c++ cmake libcurl-devel openssl-devel uuid-devel zlib-devel pulseaudio-libs-devel"
+	INSTALL_PACKAGES="git gcc-c++ cmake libcurl-devel openssl-devel openssl-static uuid-devel zlib-devel pulseaudio-libs-devel"
 	INSTALL_REPO_OPTIONS=""
 
 elif [ "${CONTAINER_FULLNAME}" = "opensuse/leap:15" ]; then
