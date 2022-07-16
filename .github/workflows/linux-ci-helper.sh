@@ -84,7 +84,7 @@ elif [ "${CONTAINER_FULLNAME}" = "rockylinux:8" ]; then
 	PACKAGE_MANAGER_BIN="dnf"
 	PACKAGE_UPDATE_OPTIONS="update -y -qq"
 
-	INSTALL_PACKAGES="git gcc-c++ cmake libcurl-devel openssl-devel uuid-devel zlib-devel pulseaudio-libs-devel"
+	INSTALL_PACKAGES="git gcc-c++ cmake libcurl-devel openssl-devel uuid-devel zlib-devel pulseaudio-libs-devel diffutils"
 	INSTALL_REPO_OPTIONS="--enablerepo=powertools"
 
 elif [ "${CONTAINER_FULLNAME}" = "centos:centos7" ]; then
