@@ -38,7 +38,7 @@ CONTAINER_FULLNAME="$1"
 #-----------------------------------------------------------
 # OS dependent variables
 #-----------------------------------------------------------
-if [ "${CONTAINER_FULLNAME}" = "ubuntu:21.10" ]; then
+if [ "${CONTAINER_FULLNAME}" = "ubuntu:22.04" ]; then
 	PACKAGE_MANAGER_BIN="apt-get"
 	PACKAGE_UPDATE_OPTIONS="update -y -qq"
 
@@ -92,6 +92,13 @@ elif [ "${CONTAINER_FULLNAME}" = "centos:centos7" ]; then
 	PACKAGE_UPDATE_OPTIONS="update -y"
 
 	INSTALL_PACKAGES="git gcc-c++ cmake libcurl-devel openssl-devel uuid-devel zlib-devel pulseaudio-libs-devel"
+	INSTALL_REPO_OPTIONS=""
+
+elif [ "${CONTAINER_FULLNAME}" = "fedora:36" ]; then
+	PACKAGE_MANAGER_BIN="dnf"
+	PACKAGE_UPDATE_OPTIONS="update -y -qq"
+
+	INSTALL_PACKAGES="git gcc-c++ cmake libcurl-devel openssl-devel uuid-devel zlib-devel pulseaudio-libs-devel diffutils"
 	INSTALL_REPO_OPTIONS=""
 
 elif [ "${CONTAINER_FULLNAME}" = "fedora:35" ]; then
