@@ -49,18 +49,22 @@ jobs:
       matrix:
         # [NOTE]
         # The following OS is not built because the version of cmake is low:
+        #   ubuntu:21.10
         #   ubuntu:18.04
         #   debian:stretch
         #   centos:centos7
         #
+        # This is temporarily disabled.
+        #   opensuse/leap:15
+        #
         container:
-          - ubuntu:21.10
+          - ubuntu:22.04
           - ubuntu:20.04
           - debian:bullseye
           - debian:buster
           - rockylinux:8
+          - fedora:36
           - fedora:35
-          - opensuse/leap:15
 
     container:
       image: ${{ matrix.container }}
