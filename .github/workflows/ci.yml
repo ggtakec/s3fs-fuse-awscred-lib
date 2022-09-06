@@ -54,6 +54,9 @@ jobs:
         #   debian:stretch
         #   centos:centos7
         #
+        # This is temporarily disabled.
+        #   opensuse/leap:15
+        #
         container:
           - ubuntu:22.04
           - ubuntu:20.04
@@ -62,7 +65,6 @@ jobs:
           - rockylinux:8
           - fedora:36
           - fedora:35
-          - opensuse/leap:15
 
     container:
       image: ${{ matrix.container }}
