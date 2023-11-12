@@ -60,11 +60,12 @@ jobs:
         container:
           - ubuntu:22.04
           - ubuntu:20.04
+          - debian:bookworm
           - debian:bullseye
-          - debian:buster
+          - rockylinux:9
           - rockylinux:8
-          - fedora:36
-          - fedora:35
+          - fedora:39
+          - fedora:38
 
     container:
       image: ${{ matrix.container }}
@@ -122,8 +123,8 @@ jobs:
           ./build/s3fsawscred_test | grep -v '[E|e]xpiration' | sed -e "s/Version .*$/Version/g" > /tmp/s3fsawscred_test.result
           diff .github/workflows/s3fsawscred_test.result /tmp/s3fsawscred_test.result
 
-  macos11:
-    runs-on: macos-11
+  macos12:
+    runs-on: macos-12
 
     steps:
       - name: Checkout source code
