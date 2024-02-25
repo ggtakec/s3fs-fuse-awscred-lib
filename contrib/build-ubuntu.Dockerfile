@@ -1,18 +1,20 @@
 ARG RELEASE=20.04
 FROM ubuntu:$RELEASE
+ARG RELEASE=20.04
 ENV DEBIAN_FRONTEND=noninteractive
-WORKDIR /src
-RUN apt-get update && apt-get install -qy devscripts \
-	libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev libpulse-dev \
-	git cmake
-RUN git clone --recurse-submodules https://github.com/aws/aws-sdk-cpp
-RUN mkdir sdk_build && cd sdk_build && \
-	cmake ../aws-sdk-cpp -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=${PWD} \
-	-DBUILD_ONLY="core;identity-management" -DAUTORUN_UNIT_TESTS=OFF && make && make install
 ADD ./ /src/s3fs-fuse-awscred-lib
-RUN cd s3fs-fuse-awscred-lib && \
-	cmake -S . -B build && \
-	cmake --build build
+WORKDIR /src/s3fs-fuse-awscred-lib
+RUN .github/workflows/linux-ci-helper.sh ubuntu:${RELEASE}
+RUN mkdir -p /src/aws-sdk/sdk_build
+WORKDIR /src/aws-sdk
+RUN git clone --recurse-submodules https://github.com/aws/aws-sdk-cpp
+WORKDIR /src/aws-sdk/sdk_build
+RUN cmake ../aws-sdk-cpp -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=${PWD} -DBUILD_ONLY="core;identity-management" -DAUTORUN_UNIT_TESTS=OFF
+RUN make
+RUN make install
+WORKDIR /src/s3fs-fuse-awscred-lib
+RUN cmake -S . -B build
+RUN cmake --build build
 VOLUME /build
 CMD mkdir -p /build && cp /src/s3fs-fuse-awscred-lib/build/libs3fsawscred.so \
 	/src/s3fs-fuse-awscred-lib/build/s3fsawscred_test \
