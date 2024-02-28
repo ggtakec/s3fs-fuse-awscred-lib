@@ -17,9 +17,9 @@ This shared library makes use of `aws-sdk-cpp` internally and leaves all S3 cred
 You can easily build and use `s3fs-fuse-awscred-lib` by following the steps below.  
 _See the `.github/workflows/ci.yml` file for build details._  
 
-### Build
+## Build
 
-#### Build and Install AWS-SDK-CPP on Ubuntu20.04
+### Build and Install AWS-SDK-CPP on Ubuntu20.04
 ```
 $ sudo apt-get install libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev libpulse-dev
 $ git clone --recurse-submodules https://github.com/aws/aws-sdk-cpp
@@ -30,12 +30,12 @@ $ make
 $ sudo make install
 ```
 
-#### Install AWS-SDK-CPP by brew on macOS
+### Install AWS-SDK-CPP by brew on macOS
 ```
 $ brew install aws-sdk-cpp
 ```
 
-#### Build s3fs-fuse-awscred-lib
+### Build s3fs-fuse-awscred-lib
 ```
 $ git clone git@github.com:ggtakec/s3fs-fuse-awscred-lib.git
 $ cd s3fs-fuse-awscred-lib
@@ -44,14 +44,14 @@ $ cmake --build build
 ```
 After that, you can find `libs3fsawscred.so` in `build` sub directory.  
 
-### Run s3fs
+## Run s3fs
 ```
 $ s3fs <bucket> <mountpoint> <options...> -o credlib=libs3fsawscred.so -o credlib_opts=Off
 ```
 
 To specify this `s3fs-fuse-awscred-lib` for s3fs, use the following options:  
 
-#### credlib
+### credlib
 An option to specify the `s3fs-fuse-awscred-lib` library.  
 You can specify only the library name or the path to the library file.  
 The s3fs use `dlopen` to search for the specified `s3fs-fuse-awscred-lib` library and load it.  
@@ -61,20 +61,30 @@ Example:
 -o credlib=libs3fsawscred.so
 ```
 
-#### credlib_opts
+### credlib_opts
 Specifies the options provided by `s3fs-fuse-awscred-lib`.  
-If you specify `s3fs-fuse-awscred-lib`, you can specify the output level of the debug message shown below for this option:  
-- Off
-- Fatal
-- Error
-- Warn
-- Info
-- Debug
-- Trace
-
+- LogLevel  
+Specify the output level of the debug message shown below for this option:  
 _These options are the same as the log level defined in `aws-sdk-cpp`(Aws::Utils::Logging::LogLevel)._  
+  - Off
+  - Fatal
+  - Error
+  - Warn
+  - Info
+  - Debug
+  - Trace
+- SSOProfile(SSOProf)  
+Specify the SSO profile name. _(mainly the name written in sso-session in `.aws/config`.)_  
+_This DSO cannot handle that authentication callback when it comes to SSO, so it is a temporary token acquisition._
+
+If you want to specify multiple options above, please specify them using a comma(`,`) as a delimiter.
+
+For the LogLevel option, you can omit `LogLevel` and specify its value directly.  
+For example, `Loglevel=Info` is the same as `Info`.  
 
 Example:  
 ```
+-o credlib_opts="Loglevel=Info"
 -o credlib_opts=Info
+-o credlib_opts="Loglevel=Info,SSOProfile=MyProf"
 ```

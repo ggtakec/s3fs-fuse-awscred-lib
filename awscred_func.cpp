@@ -18,10 +18,60 @@
 
 #include <string.h>
 #include <iostream>
+#include <algorithm>
+#include <string>
 
 #include "config.h"
 #include "awscred.h"
 #include "awscred_func.h"
+
+//----------------------------------------------------------
+// S3fsAwsCredParseOption
+//----------------------------------------------------------
+static size_t S3fsAwsCredParseOption(const char* options, std::map<std::string, std::string>& opts)
+{
+	opts.clear();
+	if(!options || 0 == strlen(options)){
+		return opts.size();
+	}
+	std::string	strOptions = options;
+
+	// Cut double/single quote pair
+	if(2 <= strOptions.length() && (('"' == *strOptions.begin() && '"' == *strOptions.rbegin()) || ('\'' == *strOptions.begin() && '\'' == *strOptions.rbegin()))){
+		strOptions = strOptions.substr(1, strOptions.length() - 2);
+	}
+
+	// Parse ',' and Set option/value
+	std::string::size_type	FoundPos;
+	do{
+		std::string::size_type	StartPos = (FoundPos == std::string::npos ? 0 : (FoundPos + 1));
+		FoundPos = strOptions.find(',', StartPos);
+
+		std::string	FoundPair;
+		if(FoundPos == std::string::npos){
+			FoundPair = strOptions;
+		}else if(StartPos != FoundPos){
+			FoundPair  = strOptions.substr(0, FoundPos);
+			strOptions = strOptions.substr(FoundPos + 1);
+		}
+
+		if(!FoundPair.empty()){
+			std::string				strLowKey;
+			std::string				strValue;
+			std::string::size_type	PairEqPos = FoundPair.find('=');
+			if(PairEqPos == std::string::npos){
+				strLowKey = FoundPair;
+			}else{
+				strLowKey = FoundPair.substr(0, PairEqPos);
+				strValue  = FoundPair.substr(++PairEqPos);
+			}
+			std::transform(strLowKey.cbegin(), strLowKey.cend(), strLowKey.begin(), ::tolower);
+			opts[strLowKey] = strValue;
+		}
+	}while(FoundPos != std::string::npos);
+
+	return opts.size();
+}
 
 //----------------------------------------------------------
 // Aws::SDKOptions
@@ -36,6 +86,15 @@ static Aws::SDKOptions& GetSDKOptions()
 {
 	static Aws::SDKOptions	options;
 	return options;
+}
+
+//----------------------------------------------------------
+// SSO Profile name
+//----------------------------------------------------------
+static Aws::String& GetSSOProfile()
+{
+	static Aws::String	ssoprofile;
+	return ssoprofile;
 }
 
 //----------------------------------------------------------
@@ -81,26 +140,176 @@ bool InitS3fsCredential(const char* popts, char** pperrstr)
 	// Check option arguments and set it
 	//
 	Aws::SDKOptions& options = GetSDKOptions();
-	if(popts && 0 < strlen(popts)){
-		if(0 == strcasecmp(popts, "Off")){
-			options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Off;
-		}else if(0 == strcasecmp(popts, "Fatal")){
-			options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Fatal;
-		}else if(0 == strcasecmp(popts, "Error")){
-			options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Error;
-		}else if(0 == strcasecmp(popts, "Warn")){
-			options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Warn;
-		}else if(0 == strcasecmp(popts, "Info")){
-			options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Info;
-		}else if(0 == strcasecmp(popts, "Debug")){
-			options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Debug;
-		}else if(0 == strcasecmp(popts, "Trace")){
-			options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Trace;
-		}else{
-			if(pperrstr){
-				*pperrstr = strdup("Unknown option(Aws::Utils::Logging::LogLevel) is specified.");
+
+	// Parse option string
+	std::map<std::string, std::string>	ParsedOpts;
+	size_t	OptCnt = S3fsAwsCredParseOption(popts, ParsedOpts);
+
+	if(0 < OptCnt){
+		bool	isSetLogLevel	= false;
+
+		for(std::map<std::string, std::string>::const_iterator iter = ParsedOpts.begin(); iter != ParsedOpts.end(); ++iter){
+			std::string	strLowkey	= iter->first;
+			std::string	strValue	= iter->second;
+
+			if(0 == strcasecmp(strLowkey.c_str(), "SSOProfile") || 0 == strcasecmp(strLowkey.c_str(), "SSOProf")){
+				if(strValue.empty()){
+					if(pperrstr){
+						*pperrstr = strdup("Option(SSOProfile) value is empty.");
+					}
+					return false;
+				}
+
+				Aws::String&	ssoprofile = GetSSOProfile();
+				if(!ssoprofile.empty()){
+					if(pperrstr){
+						*pperrstr = strdup("Already specified SSO Profile name.");
+					}
+					return false;
+				}
+				ssoprofile = strValue.c_str();
+
+			}else if(0 == strcasecmp(strLowkey.c_str(), "LogLevel")){
+				if(0 == strcasecmp(strValue.c_str(), "Off")){
+					if(isSetLogLevel){
+						if(pperrstr){
+							*pperrstr = strdup("Option(LogLevel) is already specified, so could not set Off.");
+						}
+						return false;
+					}
+					options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Off;
+
+				}else if(0 == strcasecmp(strValue.c_str(), "Fatal")){
+					if(isSetLogLevel){
+						if(pperrstr){
+							*pperrstr = strdup("Option(LogLevel) is already specified, so could not set Off.");
+						}
+						return false;
+					}
+					options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Fatal;
+
+				}else if(0 == strcasecmp(strValue.c_str(), "Error")){
+					if(isSetLogLevel){
+						if(pperrstr){
+							*pperrstr = strdup("Option(LogLevel) is already specified, so could not set Off.");
+						}
+						return false;
+					}
+					options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Error;
+
+				}else if(0 == strcasecmp(strValue.c_str(), "Warn")){
+					if(isSetLogLevel){
+						if(pperrstr){
+							*pperrstr = strdup("Option(LogLevel) is already specified, so could not set Off.");
+						}
+						return false;
+					}
+					options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Warn;
+
+				}else if(0 == strcasecmp(strValue.c_str(), "Info")){
+					if(isSetLogLevel){
+						if(pperrstr){
+							*pperrstr = strdup("Option(LogLevel) is already specified, so could not set Off.");
+						}
+						return false;
+					}
+					options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Info;
+
+				}else if(0 == strcasecmp(strValue.c_str(), "Debug")){
+					if(isSetLogLevel){
+						if(pperrstr){
+							*pperrstr = strdup("Option(LogLevel) is already specified, so could not set Off.");
+						}
+						return false;
+					}
+					options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Debug;
+
+				}else if(0 == strcasecmp(strValue.c_str(), "Trace")){
+					if(isSetLogLevel){
+						if(pperrstr){
+							*pperrstr = strdup("Option(LogLevel) is already specified, so could not set Off.");
+						}
+						return false;
+					}
+					options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Trace;
+				}else{
+					if(pperrstr){
+						*pperrstr = strdup("Unknown option(LogLevel) value is specified.");
+					}
+					return false;
+				}
+
+			// [NOTE]
+			// The key name only(no value) option is an abbreviation for the LogLevel option.
+			//
+			}else if(0 == strcasecmp(strLowkey.c_str(), "Off")){
+				if(isSetLogLevel){
+					if(pperrstr){
+						*pperrstr = strdup("Option(LogLevel) is already specified, so could not set Off.");
+					}
+					return false;
+				}
+				options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Off;
+
+			}else if(0 == strcasecmp(strLowkey.c_str(), "Fatal")){
+				if(isSetLogLevel){
+					if(pperrstr){
+						*pperrstr = strdup("Option(LogLevel) is already specified, so could not set Off.");
+					}
+					return false;
+				}
+				options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Fatal;
+
+			}else if(0 == strcasecmp(strLowkey.c_str(), "Error")){
+				if(isSetLogLevel){
+					if(pperrstr){
+						*pperrstr = strdup("Option(LogLevel) is already specified, so could not set Off.");
+					}
+					return false;
+				}
+				options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Error;
+
+			}else if(0 == strcasecmp(strLowkey.c_str(), "Warn")){
+				if(isSetLogLevel){
+					if(pperrstr){
+						*pperrstr = strdup("Option(LogLevel) is already specified, so could not set Off.");
+					}
+					return false;
+				}
+				options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Warn;
+
+			}else if(0 == strcasecmp(strLowkey.c_str(), "Info")){
+				if(isSetLogLevel){
+					if(pperrstr){
+						*pperrstr = strdup("Option(LogLevel) is already specified, so could not set Off.");
+					}
+					return false;
+				}
+				options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Info;
+
+			}else if(0 == strcasecmp(strLowkey.c_str(), "Debug")){
+				if(isSetLogLevel){
+					if(pperrstr){
+						*pperrstr = strdup("Option(LogLevel) is already specified, so could not set Off.");
+					}
+					return false;
+				}
+				options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Debug;
+
+			}else if(0 == strcasecmp(strLowkey.c_str(), "Trace")){
+				if(isSetLogLevel){
+					if(pperrstr){
+						*pperrstr = strdup("Option(LogLevel) is already specified, so could not set Off.");
+					}
+					return false;
+				}
+				options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Trace;
+			}else{
+				if(pperrstr){
+					*pperrstr = strdup("Unknown option is specified.");
+				}
+				return false;
 			}
-			return false;
 		}
 	}
 
@@ -144,7 +353,12 @@ bool UpdateS3fsCredential(char** ppaccess_key_id, char** ppserect_access_key, ch
 		*pperrstr = NULL;
 	}
 
-	S3fsAWSCredentialsProviderChain	providerChains;
+	// Get SSO Profile option
+	const Aws::String&		ssoprofile	= GetSSOProfile();
+	const char*				pSSOProf	= ssoprofile.empty() ? nullptr : ssoprofile.c_str();
+
+	// Create provider chain
+	S3fsAWSCredentialsProviderChain	providerChains(pSSOProf);
 	Aws::SDKOptions&		options		= GetSDKOptions();
 	auto					credentials	= providerChains.GetAWSCredentials();
 	bool					result		= true;

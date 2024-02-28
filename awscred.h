@@ -36,7 +36,7 @@
 class S3fsAWSCredentialsProviderChain : public Aws::Auth::AWSCredentialsProviderChain
 {
 	public:
-		S3fsAWSCredentialsProviderChain();
+		S3fsAWSCredentialsProviderChain(const char* ssoprofile = nullptr);
 };
 
 /*
