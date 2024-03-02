@@ -30,15 +30,21 @@ static const char S3fsDefaultCredentialsProviderChainTag[]			= "DefaultAWSCreden
 //----------------------------------------------------------
 // Methods : S3fsAWSCredentialsProviderChain
 //----------------------------------------------------------
-S3fsAWSCredentialsProviderChain::S3fsAWSCredentialsProviderChain() : Aws::Auth::AWSCredentialsProviderChain()
+S3fsAWSCredentialsProviderChain::S3fsAWSCredentialsProviderChain(const char* ssoprofile) : Aws::Auth::AWSCredentialsProviderChain()
 {
 	AddProvider(Aws::MakeShared<Aws::Auth::EnvironmentAWSCredentialsProvider>(S3fsDefaultCredentialsProviderChainTag));
 	AddProvider(Aws::MakeShared<Aws::Auth::ProfileConfigFileAWSCredentialsProvider>(S3fsDefaultCredentialsProviderChainTag));
 	AddProvider(Aws::MakeShared<Aws::Auth::ProcessCredentialsProvider>(S3fsDefaultCredentialsProviderChainTag));
 	AddProvider(Aws::MakeShared<Aws::Auth::STSAssumeRoleWebIdentityCredentialsProvider>(S3fsDefaultCredentialsProviderChainTag));
 	AddProvider(Aws::MakeShared<Aws::Auth::STSProfileCredentialsProvider>(S3fsDefaultCredentialsProviderChainTag));
-	AddProvider(Aws::MakeShared<Aws::Auth::SSOCredentialsProvider>(S3fsDefaultCredentialsProviderChainTag));
-	
+
+	// SSO
+	if(ssoprofile){
+		AddProvider(Aws::MakeShared<Aws::Auth::SSOCredentialsProvider>(S3fsDefaultCredentialsProviderChainTag, ssoprofile));
+	}else{
+		AddProvider(Aws::MakeShared<Aws::Auth::SSOCredentialsProvider>(S3fsDefaultCredentialsProviderChainTag));
+	}
+
 	//
 	// ECS TaskRole Credentials only available when ENVIRONMENT VARIABLE is set
 	//
