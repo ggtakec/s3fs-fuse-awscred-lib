@@ -76,6 +76,10 @@ _These options are the same as the log level defined in `aws-sdk-cpp`(Aws::Utils
 - SSOProfile(SSOProf)  
 Specify the SSO profile name. _(mainly the name written in sso-session in `.aws/config`.)_  
 _This DSO cannot handle that authentication callback when it comes to SSO, so it is a temporary token acquisition._
+- TokenPeriodSecond(PeriodSec)  
+Specify the validity period of the Session Token in seconds.  
+_If this option is specified, the Session Token will be considered valid for this validity period(in seconds), starting from the first time this Token is read._  
+_User cannot set an expiration date for Credentials(`.aws/<file>` or environment variables), so if this value is not set, the expiration date will indicate a long time in the future._  
 
 If you want to specify multiple options above, please specify them using a comma(`,`) as a delimiter.
 
