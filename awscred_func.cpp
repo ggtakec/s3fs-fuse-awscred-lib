@@ -98,6 +98,56 @@ static Aws::String& GetSSOProfile()
 }
 
 //----------------------------------------------------------
+// Auxiliary Valid period seconds
+//----------------------------------------------------------
+// [NOTE] About Session Token Expiration
+// There is no key in .aws/config or .aws/credential that
+// specifies the SessionToken Expiration.(missing keys like
+// aws_session_expiration)
+// This library only provides a function to load Credentials
+// and does not have a function to obtain SessionTokens, so
+// SessionTokens(and AccessKeys, Secrets, etc.) can only be
+// obtained from Credentials (environment variables, files,
+// etc).
+// This means that unless you pass the Expriation externally,
+// you won't know its expiration date.
+// Therefore, it can only be passed as a constant value as
+// an option to this library.(This may change in the future)
+//
+static int64_t	periodsec = -1;
+
+static bool SetValidPeriodSec(int64_t sec)
+{
+	if(-1 != periodsec){
+		return false;
+	}
+	if(sec <= 0 || (60 * 60 * 24 * 365 * 5) < sec){		// Maximum is 5 years
+		return false;
+	}
+	periodsec = sec;
+
+	return true;
+}
+
+static const Aws::Utils::DateTime& GetExparationByValidPeriod(const Aws::String& sessionToken, const Aws::Utils::DateTime& exp)
+{
+	static Aws::String			targetSessionToken;
+	static Aws::Utils::DateTime	targetExpiration;
+
+	if(-1 == periodsec){
+		return exp;
+	}
+	if(targetSessionToken != sessionToken){
+		// Update new session token
+		int64_t	expms		= exp.Millis();
+		int64_t	maxms		= Aws::Utils::DateTime::CurrentTimeMillis() + (periodsec * 1000);
+		targetExpiration	= Aws::Utils::DateTime(std::min(expms, maxms));
+		targetSessionToken	= sessionToken;
+	}
+	return targetExpiration;
+}
+
+//----------------------------------------------------------
 // Export interface functions
 //----------------------------------------------------------
 //
@@ -168,6 +218,22 @@ bool InitS3fsCredential(const char* popts, char** pperrstr)
 					return false;
 				}
 				ssoprofile = strValue.c_str();
+
+			}else if(0 == strcasecmp(strLowkey.c_str(), "TokenPeriodSecond") || 0 == strcasecmp(strLowkey.c_str(), "PeriodSec")){
+				if(strValue.empty()){
+					if(pperrstr){
+						*pperrstr = strdup("Option(SSOProfile) value is empty.");
+					}
+					return false;
+				}
+				int64_t	periodsec = static_cast<int64_t>(stoll(strValue));
+
+				if(!SetValidPeriodSec(periodsec)){
+					if(pperrstr){
+						*pperrstr = strdup("Failed to set Session Token Period Seconds.");
+					}
+					return false;
+				}
 
 			}else if(0 == strcasecmp(strLowkey.c_str(), "LogLevel")){
 				if(0 == strcasecmp(strValue.c_str(), "Off")){
@@ -367,13 +433,13 @@ bool UpdateS3fsCredential(char** ppaccess_key_id, char** ppserect_access_key, ch
 	Aws::String				accessKeyId	= credentials.GetAWSAccessKeyId();
 	Aws::String				secretKey	= credentials.GetAWSSecretKey();
 	Aws::String				sessionToken= credentials.GetSessionToken();
-	Aws::Utils::DateTime	expiration	= credentials.GetExpiration();
+	Aws::Utils::DateTime	expiration	= GetExparationByValidPeriod(sessionToken, credentials.GetExpiration());
 
 	// Set result buffers
 	*ppaccess_key_id	= strdup(accessKeyId.c_str());
 	*ppserect_access_key= strdup(secretKey.c_str());
 	*ppaccess_token		= strdup(sessionToken.c_str());
-	*ptoken_expire		= expiration.Millis() / 1000;		// msec to unittime(s)
+	*ptoken_expire		= static_cast<long long>(expiration.Seconds());
 
 	// For debug
 	if(Aws::Utils::Logging::LogLevel::Info <= options.loggingOptions.logLevel){
