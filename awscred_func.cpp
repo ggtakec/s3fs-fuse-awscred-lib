@@ -31,7 +31,7 @@
 static size_t S3fsAwsCredParseOption(const char* options, std::map<std::string, std::string>& opts)
 {
 	opts.clear();
-	if(!options || 0 == strlen(options)){
+	if(nullptr == options || '\0' == options[0]){
 		return opts.size();
 	}
 	std::string	strOptions = options;
@@ -42,7 +42,7 @@ static size_t S3fsAwsCredParseOption(const char* options, std::map<std::string, 
 	}
 
 	// Parse ',' and Set option/value
-	std::string::size_type	FoundPos;
+	std::string::size_type	FoundPos = std::string::npos;
 	do{
 		std::string::size_type	StartPos = (FoundPos == std::string::npos ? 0 : (FoundPos + 1));
 		FoundPos = strOptions.find(',', StartPos);
