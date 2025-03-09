@@ -38,37 +38,96 @@ static size_t S3fsAwsCredParseOption(const char* options, std::map<std::string, 
 
 	// Cut double/single quote pair
 	if(2 <= strOptions.length() && (('"' == *strOptions.begin() && '"' == *strOptions.rbegin()) || ('\'' == *strOptions.begin() && '\'' == *strOptions.rbegin()))){
-		strOptions = strOptions.substr(1, strOptions.length() - 2);
+		strOptions = strOptions.substr(1, strOptions.size() - 2);
 	}
 
-	// Parse ',' and Set option/value
-	std::string::size_type	FoundPos = std::string::npos;
-	do{
-		std::string::size_type	StartPos = (FoundPos == std::string::npos ? 0 : (FoundPos + 1));
-		FoundPos = strOptions.find(',', StartPos);
-
-		std::string	FoundPair;
-		if(FoundPos == std::string::npos){
-			FoundPair = strOptions;
-		}else if(StartPos != FoundPos){
-			FoundPair  = strOptions.substr(0, FoundPos);
-			strOptions = strOptions.substr(FoundPos + 1);
-		}
-
-		if(!FoundPair.empty()){
-			std::string				strLowKey;
-			std::string				strValue;
-			std::string::size_type	PairEqPos = FoundPair.find('=');
-			if(PairEqPos == std::string::npos){
-				strLowKey = FoundPair;
+	std::string	strKey;
+	std::string	strVal;
+	bool		IsEqual   = false;
+	bool		IsQuote   = false;
+	bool		IsDQuote  = false;
+	bool		IsTermStr = false;
+	for(std::string::size_type sPos = 0; sPos < strOptions.size(); ++sPos){
+		if(IsQuote || IsDQuote){
+			if(IsQuote && '\'' == strOptions[sPos]){
+				IsQuote   = false;
+				IsTermStr = true;
+			}else if(IsDQuote && '"' == strOptions[sPos]){
+				IsDQuote  = false;
+				IsTermStr = true;
 			}else{
-				strLowKey = FoundPair.substr(0, PairEqPos);
-				strValue  = FoundPair.substr(++PairEqPos);
+				if(!IsEqual){
+					strKey += strOptions[sPos];
+				}else{
+					strVal += strOptions[sPos];
+				}
 			}
-			std::transform(strLowKey.cbegin(), strLowKey.cend(), strLowKey.begin(), ::tolower);
-			opts[strLowKey] = strValue;
+		}else{
+			if('\'' == strOptions[sPos]){
+				if(IsTermStr){
+					// Wrong format, but skip this
+					std::cerr << "[s3fsawscred] : Wrong option(quote range has ended but non-delimiter char(quote) continue), but continue parsing." << std::endl;
+					IsTermStr = false;
+				}else{
+					if(!IsEqual && !strKey.empty()){
+						std::cerr << "[s3fsawscred] : Wrong option(a quote was found in the option key), this quote char will be skipped." << std::endl;
+					}else if(IsEqual && !strVal.empty()){
+						std::cerr << "[s3fsawscred] : Wrong option(a quote was found in the option value), this quote char will be skipped." << std::endl;
+					}
+				}
+				IsQuote = true;
+
+			}else if('"' == strOptions[sPos]){
+				if(IsTermStr){
+					// Wrong format, but skip this
+					std::cerr << "[s3fsawscred] : Wrong option(quote range has ended but non-delimiter char(dquote) continue), but continue parsing" << std::endl;
+					IsTermStr = false;
+				}else{
+					if(!IsEqual && !strKey.empty()){
+						std::cerr << "[s3fsawscred] : Wrong option(a double quote was found in the option key), this double quote char will be skipped." << std::endl;
+					}else if(IsEqual && !strVal.empty()){
+						std::cerr << "[s3fsawscred] : Wrong option(a double quote was found in the option value), this double quote char will be skipped." << std::endl;
+					}
+				}
+				IsDQuote = true;
+
+			}else if(',' == strOptions[sPos]){
+				opts[strKey] = strVal;
+				strKey.clear();
+				strVal.clear();
+				IsEqual   = false;
+				IsTermStr = false;
+
+			}else if('=' == strOptions[sPos]){
+				if(!IsEqual){
+					IsEqual = true;
+				}else{
+					// Wrong format, but skip this
+					std::cerr << "[s3fsawscred] : Wrong option(the equals character was found in a option value), but continue parsing" << std::endl;
+					strVal += strOptions[sPos];
+				}
+				IsTermStr = false;
+
+			}else{
+				if(IsTermStr){
+					// Wrong format, but skip this
+					std::cerr << "[s3fsawscred] : Wrong option(quote range has ended but non-delimiter char continue), but continue parsing" << std::endl;
+					IsTermStr = false;
+				}
+				if(!IsEqual){
+					strKey += strOptions[sPos];
+				}else{
+					strVal += strOptions[sPos];
+				}
+			}
 		}
-	}while(FoundPos != std::string::npos);
+	}
+
+	if(IsQuote || IsDQuote){
+		std::cerr << "[s3fsawscred] : Wrong option(the quote(double quote) is not terminated), so last option is skipped." << std::endl;
+	}else if(!strKey.empty() || !strVal.empty()){
+		opts[strKey] = strVal;
+	}
 
 	return opts.size();
 }
