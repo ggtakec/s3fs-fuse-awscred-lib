@@ -49,23 +49,30 @@ jobs:
       matrix:
         # [NOTE]
         # The following OS is not built because the version of cmake is low:
-        #   ubuntu:21.10
-        #   ubuntu:18.04
-        #   debian:stretch
-        #   centos:centos7
-        #
-        # This is temporarily disabled.
+        #   ubuntu:24.04
+        #   ubuntu:22.04
+        #   ubuntu:20.04
+        #   debian:bookworm
+        #   debian:bullseye
+        #   rockylinux:9
+        #   rockylinux:8
+        #   fedora:41
+        #   fedora:40
         #   opensuse/leap:15
+        #   alpine:3.21
         #
         container:
+          - ubuntu:24.04
           - ubuntu:22.04
           - ubuntu:20.04
           - debian:bookworm
           - debian:bullseye
           - rockylinux:9
           - rockylinux:8
-          - fedora:39
-          - fedora:38
+          - fedora:41
+          - fedora:40
+          - opensuse/leap:15
+          - alpine:3.21
 
     container:
       image: ${{ matrix.container }}
@@ -81,11 +88,12 @@ jobs:
       # On openSUSE, tar and gzip must be installed before action/checkout.
       #
       - name: Install packages before checkout
+        if: matrix.container == 'opensuse/leap:15'
         run: |
-          if [ "${{ matrix.container }}" = "opensuse/leap:15" ]; then zypper install -y tar gzip; fi
+          zypper install -y tar gzip
 
       - name: Checkout source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Install packages
         run: |
@@ -95,17 +103,23 @@ jobs:
       # In Rocky Linux and OpenSUSE, a "missing crypto_LIBRARY" error occurs
       # because the static crypto library does not exist.
       # Therefore, set USE_OPENSSL=OFF and use AWS-LC.
+      # Need to run prefetch_crt_dependency.sh beforehand for build errors
+      # on alpine.
       #
       - name: Build aws-sdk-cpp
         run: |
           mkdir -p /tmp/aws-sdk/sdk_build
           cd /tmp/aws-sdk
           git clone --recurse-submodules https://github.com/aws/aws-sdk-cpp
-          cd sdk_build
+          if [ "${{ matrix.container }}" = "alpine:3.21" ]; then
+              cd aws-sdk-cpp
+              ./prefetch_crt_dependency.sh
+          fi
+          cd /tmp/aws-sdk/sdk_build
           if [ "${{ matrix.container }}" = "rockylinux:8" ] || [ "${{ matrix.container }}" = "opensuse/leap:15" ]; then
-            cmake ../aws-sdk-cpp -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/home/ggtakec/work/aws-sdk-cpp -DBUILD_ONLY="core;identity-management" -DAUTORUN_UNIT_TESTS=OFF -DUSE_OPENSSL=OFF
+              cmake ../aws-sdk-cpp -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/tmp/aws-sdk/aws-sdk-cpp -DBUILD_ONLY="core;identity-management" -DAUTORUN_UNIT_TESTS=OFF -DUSE_OPENSSL=OFF
           else
-            cmake ../aws-sdk-cpp -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/home/ggtakec/work/aws-sdk-cpp -DBUILD_ONLY="core;identity-management" -DAUTORUN_UNIT_TESTS=OFF 
+              cmake ../aws-sdk-cpp -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/tmp/aws-sdk/aws-sdk-cpp -DBUILD_ONLY="core;identity-management" -DAUTORUN_UNIT_TESTS=OFF
           fi
           make
           make install
@@ -123,12 +137,12 @@ jobs:
           ./build/s3fsawscred_test | grep -v '[E|e]xpiration' | sed -e "s/Version .*$/Version/g" > /tmp/s3fsawscred_test.result
           diff .github/workflows/s3fsawscred_test.result /tmp/s3fsawscred_test.result
 
-  macos12:
-    runs-on: macos-12
+  macos14:
+    runs-on: macos-14
 
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Install packages
         run: |

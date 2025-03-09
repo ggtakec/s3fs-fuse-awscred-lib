@@ -38,116 +38,92 @@ CONTAINER_FULLNAME="$1"
 #-----------------------------------------------------------
 # OS dependent variables
 #-----------------------------------------------------------
-if [ "${CONTAINER_FULLNAME}" = "ubuntu:22.04" ]; then
+if [ "${CONTAINER_FULLNAME}" = "ubuntu:24.04" ]; then
 	PACKAGE_MANAGER_BIN="apt-get"
 	PACKAGE_UPDATE_OPTIONS="update -y -qq"
+	PACKAGE_INSTALL_OPTIONS="install -y"
 
-	INSTALL_PACKAGES="git g++ cmake libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev libpulse-dev"
+	INSTALL_PACKAGES="curl git g++ cmake libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev libpulse-dev"
+	INSTALL_REPO_OPTIONS=""
+
+elif [ "${CONTAINER_FULLNAME}" = "ubuntu:22.04" ]; then
+	PACKAGE_MANAGER_BIN="apt-get"
+	PACKAGE_UPDATE_OPTIONS="update -y -qq"
+	PACKAGE_INSTALL_OPTIONS="install -y"
+
+	INSTALL_PACKAGES="curl git g++ cmake libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev libpulse-dev"
 	INSTALL_REPO_OPTIONS=""
 
 elif [ "${CONTAINER_FULLNAME}" = "ubuntu:20.04" ]; then
 	PACKAGE_MANAGER_BIN="apt-get"
 	PACKAGE_UPDATE_OPTIONS="update -y -qq"
+	PACKAGE_INSTALL_OPTIONS="install -y"
 
-	INSTALL_PACKAGES="git g++ cmake libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev libpulse-dev"
-	INSTALL_REPO_OPTIONS=""
-
-elif [ "${CONTAINER_FULLNAME}" = "ubuntu:18.04" ]; then
-	PACKAGE_MANAGER_BIN="apt-get"
-	PACKAGE_UPDATE_OPTIONS="update -y -qq"
-
-	INSTALL_PACKAGES="git g++ cmake libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev libpulse-dev"
+	INSTALL_PACKAGES="curl git g++ cmake libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev libpulse-dev"
 	INSTALL_REPO_OPTIONS=""
 
 elif [ "${CONTAINER_FULLNAME}" = "debian:bookworm" ]; then
 	PACKAGE_MANAGER_BIN="apt-get"
 	PACKAGE_UPDATE_OPTIONS="update -y -qq"
+	PACKAGE_INSTALL_OPTIONS="install -y"
 
-	INSTALL_PACKAGES="git g++ cmake libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev libpulse-dev"
+	INSTALL_PACKAGES="curl git g++ cmake libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev libpulse-dev"
 	INSTALL_REPO_OPTIONS=""
 
 elif [ "${CONTAINER_FULLNAME}" = "debian:bullseye" ]; then
 	PACKAGE_MANAGER_BIN="apt-get"
 	PACKAGE_UPDATE_OPTIONS="update -y -qq"
+	PACKAGE_INSTALL_OPTIONS="install -y"
 
-	INSTALL_PACKAGES="git g++ cmake libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev libpulse-dev"
-	INSTALL_REPO_OPTIONS=""
-
-elif [ "${CONTAINER_FULLNAME}" = "debian:buster" ]; then
-	PACKAGE_MANAGER_BIN="apt-get"
-	PACKAGE_UPDATE_OPTIONS="update -y -qq"
-
-	INSTALL_PACKAGES="git g++ cmake libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev libpulse-dev"
-	INSTALL_REPO_OPTIONS=""
-
-elif [ "${CONTAINER_FULLNAME}" = "debian:stretch" ]; then
-	PACKAGE_MANAGER_BIN="apt-get"
-	PACKAGE_UPDATE_OPTIONS="update -y -qq"
-
-	INSTALL_PACKAGES="git g++ cmake libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev libpulse-dev"
+	INSTALL_PACKAGES="curl git g++ cmake libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev libpulse-dev"
 	INSTALL_REPO_OPTIONS=""
 
 elif [ "${CONTAINER_FULLNAME}" = "rockylinux:9" ]; then
 	PACKAGE_MANAGER_BIN="dnf"
 	PACKAGE_UPDATE_OPTIONS="update -y -qq"
+	PACKAGE_INSTALL_OPTIONS="install -y --allowerasing"
 
-	INSTALL_PACKAGES="git gcc-c++ cmake libcurl-devel openssl-devel uuid-devel zlib-devel pulseaudio-libs-devel diffutils"
+	INSTALL_PACKAGES="curl git gcc-c++ cmake libcurl-devel openssl-devel uuid-devel zlib-devel pulseaudio-libs-devel diffutils"
 	INSTALL_REPO_OPTIONS="--enablerepo=crb"
 
 elif [ "${CONTAINER_FULLNAME}" = "rockylinux:8" ]; then
 	PACKAGE_MANAGER_BIN="dnf"
 	PACKAGE_UPDATE_OPTIONS="update -y -qq"
+	PACKAGE_INSTALL_OPTIONS="install -y"
 
-	INSTALL_PACKAGES="git gcc-c++ cmake libcurl-devel openssl-devel uuid-devel zlib-devel pulseaudio-libs-devel diffutils"
+	INSTALL_PACKAGES="curl git gcc-c++ cmake libcurl-devel openssl-devel uuid-devel zlib-devel pulseaudio-libs-devel diffutils"
 	INSTALL_REPO_OPTIONS="--enablerepo=powertools"
 
-elif [ "${CONTAINER_FULLNAME}" = "centos:centos7" ]; then
-	PACKAGE_MANAGER_BIN="yum"
-	PACKAGE_UPDATE_OPTIONS="update -y"
-
-	INSTALL_PACKAGES="git gcc-c++ cmake libcurl-devel openssl-devel uuid-devel zlib-devel pulseaudio-libs-devel"
-	INSTALL_REPO_OPTIONS=""
-
-elif [ "${CONTAINER_FULLNAME}" = "fedora:39" ]; then
+elif [ "${CONTAINER_FULLNAME}" = "fedora:41" ]; then
 	PACKAGE_MANAGER_BIN="dnf"
 	PACKAGE_UPDATE_OPTIONS="update -y -qq"
+	PACKAGE_INSTALL_OPTIONS="install -y"
 
-	INSTALL_PACKAGES="git gcc-c++ cmake libcurl-devel openssl-devel uuid-devel zlib-devel pulseaudio-libs-devel diffutils"
+	INSTALL_PACKAGES="curl git gcc-c++ cmake libcurl-devel openssl-devel openssl-devel-engine uuid-devel zlib-devel pulseaudio-libs-devel diffutils"
 	INSTALL_REPO_OPTIONS=""
 
-elif [ "${CONTAINER_FULLNAME}" = "fedora:38" ]; then
+elif [ "${CONTAINER_FULLNAME}" = "fedora:40" ]; then
 	PACKAGE_MANAGER_BIN="dnf"
 	PACKAGE_UPDATE_OPTIONS="update -y -qq"
+	PACKAGE_INSTALL_OPTIONS="install -y"
 
-	INSTALL_PACKAGES="git gcc-c++ cmake libcurl-devel openssl-devel uuid-devel zlib-devel pulseaudio-libs-devel diffutils"
-	INSTALL_REPO_OPTIONS=""
-
-elif [ "${CONTAINER_FULLNAME}" = "fedora:37" ]; then
-	PACKAGE_MANAGER_BIN="dnf"
-	PACKAGE_UPDATE_OPTIONS="update -y -qq"
-
-	INSTALL_PACKAGES="git gcc-c++ cmake libcurl-devel openssl-devel uuid-devel zlib-devel pulseaudio-libs-devel diffutils"
-	INSTALL_REPO_OPTIONS=""
-
-elif [ "${CONTAINER_FULLNAME}" = "fedora:36" ]; then
-	PACKAGE_MANAGER_BIN="dnf"
-	PACKAGE_UPDATE_OPTIONS="update -y -qq"
-
-	INSTALL_PACKAGES="git gcc-c++ cmake libcurl-devel openssl-devel uuid-devel zlib-devel pulseaudio-libs-devel diffutils"
-	INSTALL_REPO_OPTIONS=""
-
-elif [ "${CONTAINER_FULLNAME}" = "fedora:35" ]; then
-	PACKAGE_MANAGER_BIN="dnf"
-	PACKAGE_UPDATE_OPTIONS="update -y -qq"
-
-	INSTALL_PACKAGES="git gcc-c++ cmake libcurl-devel openssl-devel openssl-static uuid-devel zlib-devel pulseaudio-libs-devel diffutils"
+	INSTALL_PACKAGES="curl git gcc-c++ cmake libcurl-devel openssl-devel uuid-devel zlib-devel pulseaudio-libs-devel diffutils"
 	INSTALL_REPO_OPTIONS=""
 
 elif [ "${CONTAINER_FULLNAME}" = "opensuse/leap:15" ]; then
 	PACKAGE_MANAGER_BIN="zypper"
 	PACKAGE_UPDATE_OPTIONS="refresh"
+	PACKAGE_INSTALL_OPTIONS="install -y"
 
-	INSTALL_PACKAGES="git gcc-c++ cmake libcurl-devel openssl-devel uuid-devel zlib-devel libpulse-devel"
+	INSTALL_PACKAGES="curl git gcc-c++ cmake libcurl-devel openssl-devel uuid-devel zlib-devel libpulse-devel"
+	INSTALL_REPO_OPTIONS=""
+
+elif [ "${CONTAINER_FULLNAME}" = "alpine:3.21" ]; then
+	PACKAGE_MANAGER_BIN="apk"
+	PACKAGE_UPDATE_OPTIONS="update --no-progress"
+	PACKAGE_INSTALL_OPTIONS="add --no-progress --no-cache"
+
+	INSTALL_PACKAGES="curl git g++ cmake make curl-dev openssl-dev util-linux-dev zlib-dev pulseaudio-dev diffutils"
 	INSTALL_REPO_OPTIONS=""
 
 else
@@ -170,7 +146,7 @@ fi
 # Install packages
 #
 echo "${PRGNAME} [INFO] Install packages."
-if ! /bin/sh -c "${PACKAGE_MANAGER_BIN} ${INSTALL_REPO_OPTIONS} install -y ${INSTALL_PACKAGES}"; then
+if ! /bin/sh -c "${PACKAGE_MANAGER_BIN} ${INSTALL_REPO_OPTIONS} ${PACKAGE_INSTALL_OPTIONS} ${INSTALL_PACKAGES}"; then
 	exit 1
 fi
 
